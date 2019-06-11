@@ -2,6 +2,8 @@
 #### 项目介绍 
 基于netty框架实现的局域网内的ip电话，netty是一个socket框架。通过输入对方ip或者点击从服务器上获取到的ip地址进行语音通话，双方通过交换控制信令实现语音通话的控制，共有四个界面的切换，打电话界面，响铃界面，通话界面，主界面。本来打算做个群组通话，但是只做到了两个录音音频合成的操作，还没有实现群组的数据发送，并没有实现群组通话的功能。  
 
+ps：本项目是在[VideoCalling](<https://github.com/xmtggh/VideoCalling>)上进行改进的，该项目是实现局域网的视频传输，我将其语音传输抽取出来进行更改实现语音通话，感谢作者的无私贡献。
+
 #### 项目实现思路
 利用安卓里面的AudioRecord录音类进行录音，然后运用speex第三方库进行降噪编码，将编码后的语音流通过socket发送给对方， 对方在收到语音数据时候将进行解码操作，之后使用AudioTrack进行语音的播放。  
 对于群组通话，比如说有ABC三人进行通话，通过A开启一个聊天室，然后BC加入聊天室，此时BC只需将自己的语音流发送给A，然后在A进行语音的合成操作，将合成的语音在本地播放和发送给BC即可，但是具体的网络连接并没有实现。
@@ -130,3 +132,110 @@ if (message.getMsgtype().equals(Message.MES_TYPE_NOMAL)){
 }
 ```
 总共的控制代码有三种，其中收到打电话信令的时候，需要判断此时被呼叫端是否正忙，如果不忙则跳到响铃界面，否则直接丢包。当收到对方接听电话的指令是，则直接显示说话界面，开始录音并且将接电话标示置为true。当收到通话结束的时候，此时需要判断发出此条结束消息的来源是否是正在通话的客户端，防止在第三方进行呼叫是出现错误挂断的情形。
+
+####  混音实现说明
+
+混音实现主要运用通过录音路录制两段音频，然后将其保存到文件中，混音时以字节流进行读取录音文件，然后采用平均混音算法进行混音，并保存到文件，通过测试可以成功的实现混音操作。主要涉及到安卓文件的创建和以字节流的方式进行文件的读取，混音算法。
+
+混音算法，使用二维byte数组保存两个音频流，然后进行合并。需要传入保存的文件名称
+
+``` 
+public static byte[] averageMix(String file1,String file2) throws IOException {
+
+        byte[][] bMulRoadAudioes =  new byte[][]{
+                FileUtils.getContent(file1),    //第一个文件
+                FileUtils.getContent(file2)     //第二个文件
+        };
+
+
+        byte[] realMixAudio = bMulRoadAudioes[0]; //保存混音之后的数据。
+        Log.e("ccc", " bMulRoadAudioes length " + bMulRoadAudioes.length); //2
+        //判断两个文件的大小是否相同，如果不同进行补齐操作
+        for (int rw = 0; rw < bMulRoadAudioes.length; ++rw) { //length一直都是等于2.依次检测file长度和file2长度
+            if (bMulRoadAudioes[rw].length != realMixAudio.length) {
+                Log.e("ccc", "column of the road of audio + " + rw + " is diffrent.");
+                if (bMulRoadAudioes[rw].length<realMixAudio.length){
+                    realMixAudio = subBytes(realMixAudio,0,bMulRoadAudioes[rw].length); //进行数组的扩展
+                }
+                else if (bMulRoadAudioes[rw].length>realMixAudio.length){
+                    bMulRoadAudioes[rw] = subBytes(bMulRoadAudioes[rw],0,realMixAudio.length);
+                }
+            }
+        }
+
+        int row = bMulRoadAudioes.length;       //行
+        int column = realMixAudio.length / 2;   //列
+        short[][] sMulRoadAudioes = new short[row][column];
+        for (int r = 0; r < row; ++r) {         //前半部分
+            for (int c = 0; c < column; ++c) {
+                sMulRoadAudioes[r][c] = (short) ((bMulRoadAudioes[r][c * 2] & 0xff) | (bMulRoadAudioes[r][c * 2 + 1] & 0xff) << 8);
+            }
+        }
+        short[] sMixAudio = new short[column];
+        int mixVal;
+        int sr = 0;
+        for (int sc = 0; sc < column; ++sc) {
+            mixVal = 0;
+            sr = 0;
+            for (; sr < row; ++sr) {
+                mixVal += sMulRoadAudioes[sr][sc];
+            }
+            sMixAudio[sc] = (short) (mixVal / row);
+        }
+
+        //合成混音保存在realMixAudio
+        for (sr = 0; sr < column; ++sr) { //后半部分
+            realMixAudio[sr * 2] = (byte) (sMixAudio[sr] & 0x00FF);
+            realMixAudio[sr * 2 + 1] = (byte) ((sMixAudio[sr] & 0xFF00) >> 8);
+        }
+
+        //保存混合之后的pcm
+        FileOutputStream fos = null;
+        //保存合成之后的文件。
+        File saveFile = new File(FileUtils.getFileBasePath()+ "averageMix.pcm" );
+        if (saveFile.exists()) {
+            saveFile.delete();
+        }
+        fos = new FileOutputStream(saveFile);// 建立一个可存取字节的文件
+        fos.write(realMixAudio);
+        fos.close();// 关闭写入流
+        return realMixAudio; //返回合成的混音。
+    }
+
+    //合并两个音轨。
+    private static byte[] subBytes(byte[] src, int begin, int count) {
+        byte[] bs = new byte[count];
+        System.arraycopy(src, begin, bs, 0, count);
+        return bs;
+    }
+```
+
+传入文件名称，返回文件内容的字节流
+```
+    //将文件流读取到数组中，
+    public static byte[] getContent(String filePath) throws IOException {
+        File file = new File(filePath);
+        long fileSize = file.length();
+        if (fileSize > Integer.MAX_VALUE) {
+            Log.d("ccc","file too big...");
+            return null;
+        }
+        FileInputStream fi = new FileInputStream(file);
+        byte[] buffer = new byte[(int) fileSize];
+        int offset = 0;
+        int numRead = 0;
+        //while循环会使得read一直进行读取，fi.read()在读取完数据以后会返回-1
+        while (offset < buffer.length
+                && (numRead = fi.read(buffer, offset, buffer.length - offset)) >= 0) {
+            offset += numRead;
+        }
+        //确保所有数据均被读取
+        if (offset != buffer.length) {
+            throw new IOException("Could not completely read file "
+                    + file.getName());
+        }
+        fi.close();
+        return buffer;
+    }
+```
+万水千山总是情，点个star行不行~
