@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PhoneCall</string>
+    <string name="title_activity_audio_talk">AudioTalk</string>
+</resources>
