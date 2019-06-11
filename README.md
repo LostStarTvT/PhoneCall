@@ -1,12 +1,13 @@
 # PhoneCall
 #### 项目介绍 
-
 基于netty框架实现的局域网内的ip电话，netty是一个socket框架。通过输入对方ip或者点击从服务器上获取到的ip地址进行语音通话，双方通过交换控制信令实现语音通话的控制，共有四个界面的切换，打电话界面，响铃界面，通话界面，主界面。本来打算做个群组通话，但是只做到了两个录音音频合成的操作，还没有实现群组的数据发送，并没有实现群组通话的功能。  
 
 #### 项目实现思路
 利用安卓里面的AudioRecord录音类进行录音，然后运用speex第三方库进行降噪编码，将编码后的语音流通过socket发送给对方， 对方在收到语音数据时候将进行解码操作，之后使用AudioTrack进行语音的播放。  
 对于群组通话，比如说有ABC三人进行通话，通过A开启一个聊天室，然后BC加入聊天室，此时BC只需将自己的语音流发送给A，然后在A进行语音的合成操作，将合成的语音在本地播放和发送给BC即可，但是具体的网络连接并没有实现。
 
+#### 界面展示
+![输入ip](pictures/call.png) 
 #### 项目架构
 - audio包：进行音频的录制、编码、解码、播放操作 
 - net包：网络连接的包 
@@ -90,16 +91,16 @@ Netty框架中有一个类SimpleChannelInboundHandler，主要是对监听的端
 //发送文字类型信息回调
 
 if (message.getMsgtype().equals(Message.MES_TYPE_NOMAL)){
-​     if (frameCallback !=null){
-​         frameCallback.onTextMessage(message.getMsgBody());
-​         frameCallback.onGetRemoteIP(message.getMsgIp());
-​     }
+     if (frameCallback !=null){
+         frameCallback.onTextMessage(message.getMsgBody());
+         frameCallback.onGetRemoteIP(message.getMsgIp());
+     }
  }else if (message.getMsgtype().equals(Message.MES_TYPE_AUDIO)){
 
 //发送语音数据接口回调
-​     if (frameCallback !=null){
-​         frameCallback.onAudioData(message.getFrame());
-​     }
+     if (frameCallback !=null){
+         frameCallback.onAudioData(message.getFrame());
+     }
  }
 ```
 在建立连接的过程中，会记录下对方的IP。在通话过程中，将收到的数据传给解码模块进行处理。
