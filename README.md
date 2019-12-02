@@ -251,4 +251,6 @@ public static byte[] averageMix(String file1,String file2) throws IOException {
         return buffer;
     }
 ```
-万水千山总是情，点个star行不行~
+万水千山总是情，点个star行不行~  
+
+![支付宝](pictures/zhifubao.jpg)
