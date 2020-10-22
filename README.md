@@ -40,7 +40,7 @@ demo文件夹中的apk文件可以直接下载运行，注册界面可以忽略�
 
 对于每一个客户端来说，都需要监听打电话的请求，并且获取到请求方的IP，然后进行数据的交互。首先需要监听端口。这里用到了Netty框架中的`Bootstrap`这个类。主要是用来设置netty的连接属性以及绑定监听的端口，这样，请求通话信息以及后续的音频数据才能够被接收。代码如下：
 
-```
+```java
 Bootstrap b = new Bootstrap();
  group = new NioEventLoopGroup();
  try {
@@ -67,7 +67,7 @@ Bootstrap b = new Bootstrap();
 
 每次传输需要判断需要发送的是什么类型的数据，做相应的处理后装入运输载体Message对象中，最后用`ChannelHandlerContext`对象将转换为Json格式的Message对象发送至目标IP地址相应的端口。
 
-```
+```java
 //发送数据。
 public void sendData(String ip, int port, Object data, String type) {
      Message message = null;
@@ -93,7 +93,7 @@ public void sendData(String ip, int port, Object data, String type) {
 
 在进行接收数据的时候也是需要进行相同判断操作，然后进行数据的获取。
 
-```
+```java
 //接收数据。
 //服务器推送对方IP和PORT
  ByteBuf buf = (ByteBuf) packet.copy().content(); //字节缓冲区
@@ -128,7 +128,7 @@ if (message.getMsgtype().equals(Message.MES_TYPE_NOMAL)){
 2. 当收到对方接听电话的指令时，则直接显示对话界面，开始录音并且将接电话标示置为true。
 3. 当收到通话结束的时候，此时需要判断发出此条结束消息的来源是否是正在通话的客户端，防止在第三方进行呼叫是出现错误挂断的情形。
 
-```
+```java
   if (msg.what == phone_make_call) { //收到打电话的请求。
 
        if (!isBusy){ //如果不忙 则跳转到通话界面。
@@ -158,7 +158,7 @@ if (message.getMsgtype().equals(Message.MES_TYPE_NOMAL)){
 
 混音算法，使用二维byte数组保存两个音频流，然后进行合并。需要传入保存的文件名称
 
-``` 
+```java 
 public static byte[] averageMix(String file1,String file2) throws IOException {
 
         byte[][] bMulRoadAudioes =  new byte[][]{
@@ -229,7 +229,7 @@ public static byte[] averageMix(String file1,String file2) throws IOException {
 ```
 
 传入文件名称，返回文件内容的字节流
-```
+```java
     //将文件流读取到数组中，
     public static byte[] getContent(String filePath) throws IOException {
         File file = new File(filePath);
