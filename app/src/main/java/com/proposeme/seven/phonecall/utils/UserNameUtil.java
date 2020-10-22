@@ -13,6 +13,7 @@ public class UserNameUtil {
         editor.putString("key",username);
         editor.apply();
     }
+
     public static String getUsername(Context context){
         SharedPreferences preferences = context.getSharedPreferences("username",Context.MODE_PRIVATE);
         String username = preferences.getString("key",null);

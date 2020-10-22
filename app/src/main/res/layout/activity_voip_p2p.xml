@@ -32,12 +32,6 @@
             android:textColor="#000000"
             android:text="192.168.1.1"/>
 
-        <ListView
-            android:id="@+id/list_view"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:layout_marginTop="100dp">
-        </ListView>
 
         <TextView
             android:id="@+id/Create_button"

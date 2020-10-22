@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:orientation="vertical">
+
+    <!--正常显示的view，入口界面-->
+    <LinearLayout
+        android:id="@+id/begin_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible"
+        android:background="#FFFFFF"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="20dp"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:text="P2P电话"/>
+        <TextView
+            android:id="@+id/create_ip_addr"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="10dp"
+            android:textColor="#000000"
+            android:text="192.168.1.1"/>
+
+        <EditText
+            android:id="@+id/user_input_TargetIp"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:maxLines="1"
+            android:text=""
+            android:hint="请输入对方ip" />
+
+        <Button
+            android:id="@+id/user_input_phoneCall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="拨打" />
+
+
+    </LinearLayout>
+
+</LinearLayout>

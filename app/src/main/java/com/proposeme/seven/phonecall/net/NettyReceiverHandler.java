@@ -7,6 +7,7 @@ import java.net.InetSocketAddress;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -35,10 +36,9 @@ public class NettyReceiverHandler extends SimpleChannelInboundHandler<DatagramPa
         String str = new String(req, "UTF-8");
         Message message = JSON.parseObject(str,Message.class);  //同一类中不需要进行导包
 
-//        Log.e("ccc","信息流" + str);
         //只有发送文字信息的时候才会返回对方ip。
         //对应各自的回调。
-        if (message.getMsgtype().equals(Message.MES_TYPE_NOMAL)){
+        if (message.getMsgtype().equals(Message.MES_TYPE_NORMAL)){
             if (frameCallback !=null){
                 frameCallback.onTextMessage(message.getMsgBody());
                 frameCallback.onGetRemoteIP(message.getMsgIp());
@@ -89,6 +89,13 @@ public class NettyReceiverHandler extends SimpleChannelInboundHandler<DatagramPa
                     new InetSocketAddress(ip, port)));
         }
     }
+
+    // 断开连接。
+    public boolean DisConnect(){
+        ChannelFuture disconnect = channelHandlerContext.disconnect();
+        return disconnect.isDone();
+    }
+
 
     public interface FrameResultedCallback {
         void onTextMessage(String msg); //返回文本信息

@@ -6,7 +6,7 @@ package com.proposeme.seven.phonecall.net;
 public class Message {
 
     public static final String MES_TYPE_AUDIO = "MES_TYPE_AUDIO"; //音频
-    public static final String MES_TYPE_NOMAL = "MES_TYPE_NOMAL"; //正常
+    public static final String MES_TYPE_NORMAL = "MES_TYPE_NORMAL"; // 本
     private String msgtype;
     private String msgBody;
     private String msgIp;

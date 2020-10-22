@@ -16,7 +16,7 @@ public class AudioDecoder implements Runnable {
     private static final int MAX_BUFFER_SIZE = 2048;
 
     private short[] decodedData;
-    private boolean isDecoding = false;
+    private volatile boolean isDecoding = false;
     private List<AudioData> dataList = null;
 
     public static AudioDecoder getInstance() {
@@ -43,7 +43,7 @@ public class AudioDecoder implements Runnable {
     }
 
     /**
-     * start decode AMR data
+     * startRecordAndPlay decode AMR data
      */
     public void startDecoding() {
         System.out.println(LOG + "开始解码");
@@ -76,7 +76,7 @@ public class AudioDecoder implements Runnable {
             }
         }
         System.out.println(LOG + "停止解码");
-        // stop playback audio
+        // stopRecordAndPlay playback audio
         player.stopPlaying();
     }
 

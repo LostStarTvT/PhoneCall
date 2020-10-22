@@ -3,7 +3,7 @@ package com.proposeme.seven.phonecall.audio;
 import android.util.Log;
 
 import com.gyz.voipdemo_speex.util.Speex;
-import com.proposeme.seven.phonecall.provider.EncodeProvider;
+import com.proposeme.seven.phonecall.provider.ApiProvider;
 
 
 import java.util.Collections;
@@ -18,7 +18,7 @@ public class AudioEncoder implements Runnable{
     //单例模式构造对象
     private static AudioEncoder encoder;
     //是否正在编码
-    private boolean isEncoding = false;
+    private volatile boolean isEncoding = false;
 
     //每一帧的音频数据的集合
     private List<AudioData> dataList = null;
@@ -45,7 +45,7 @@ public class AudioEncoder implements Runnable{
     }
 
     /**
-     * start encoding 开始编码
+     * 开始编码。
      */
     public void startEncoding() {
 
@@ -86,8 +86,8 @@ public class AudioEncoder implements Runnable{
                         0, encodedData, rawData.getSize());
                 if (encodeSize > 0) {
                     //实现发送数据。
-                    if (EncodeProvider.getProvider()!=null)
-                        EncodeProvider.getProvider().sendAudioFrame(encodedData); //发送录音数据
+                    if (ApiProvider.getProvider()!=null)
+                        ApiProvider.getProvider().sendAudioFrame(encodedData); //发送录音数据
                 }
             }
         }

@@ -12,22 +12,34 @@ import com.gyz.voipdemo_speex.util.Speex;
  */
 public class AudioRecorder  implements Runnable {
     String LOG = "Recorder";
-
-    //是否正在录制
-    private boolean isRecording = false;
     //音频录制对象
     private AudioRecord audioRecord;
 
-    private int audioBufSize = 0;
+    // 单例对象。
+    private static AudioRecorder mAudioRecorder;
     //回声消除
     private AcousticEchoCanceler canceler;
+
+    private Thread runner = null;
+    private AudioRecorder(){
+    }
+
+    //是否正在录制
+    private volatile boolean isRecording = false;
+
+    // 获取单例模式实例。
+    public static AudioRecorder getAudioRecorder(){
+        if (mAudioRecorder == null){
+            mAudioRecorder = new AudioRecorder();
+        }
+        return mAudioRecorder;
+    }
 
     //开始录音的逻辑
     public void startRecording() {
         Log.e("ccc", "开启录音");
         //计算缓存大小
-        audioBufSize = AudioRecord.getMinBufferSize(AudioConfig.SAMPLERATE,
-                AudioConfig.PLAYER_CHANNEL_CONFIG2, AudioConfig.AUDIO_FORMAT);
+        int audioBufSize = AudioRecord.getMinBufferSize(AudioConfig.SAMPLERATE, AudioConfig.PLAYER_CHANNEL_CONFIG2, AudioConfig.AUDIO_FORMAT);
         //实例化录制对象
         if (null == audioRecord && audioBufSize != AudioRecord.ERROR_BAD_VALUE) {
             audioRecord = new AudioRecord(AudioConfig.AUDIO_RESOURCE,
@@ -36,8 +48,20 @@ public class AudioRecorder  implements Runnable {
                     AudioConfig.AUDIO_FORMAT, audioBufSize);
         }
         //消回音处理
+        assert audioRecord != null;
         initAEC(audioRecord.getAudioSessionId());
-        new Thread(this).start(); //启动本线程。即实现接口的启动方式
+        runner = new Thread(this); //启动本线程。即实现接口的启动方式
+        runner.start();
+    }
+
+    // 关闭录制
+    public void stopRecording() {
+        this.isRecording = false;
+    }
+
+    // 是否正在录制、
+    public boolean isRecording() {
+        return this.isRecording;
     }
 
     //消除回音
@@ -53,16 +77,9 @@ public class AudioRecorder  implements Runnable {
         return canceler.getEnabled();
     }
 
-    //关闭录制
-    public void stopRecording() {
-        this.isRecording = false;
-    }
-    public boolean isRecording() {
-        return isRecording;
-    }
-
     @Override
     public void run() {
+
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
             Log.e("ccc", "unInit");
             return;
@@ -73,18 +90,18 @@ public class AudioRecorder  implements Runnable {
         encoder.startEncoding();
         audioRecord.startRecording();
 
-        Log.e("ccc", "开始编码");
         this.isRecording = true;
+        Log.e("ccc", "开始编码");
         int size = Speex.getInstance().getFrameSize();
 
         short[] samples = new short[size];
+
         while (isRecording) {
             int bufferRead = audioRecord.read(samples, 0, size);
             if (bufferRead > 0) {
                 encoder.addData(samples,bufferRead);
             }
         }
-        audioRecord.stop();
         encoder.stopEncoding();
     }
 }

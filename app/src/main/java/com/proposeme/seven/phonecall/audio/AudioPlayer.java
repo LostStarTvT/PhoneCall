@@ -22,9 +22,9 @@ public class AudioPlayer implements  Runnable{
     String LOG = "AudioPlayer ";
     private static AudioPlayer player;
 
-    private List<AudioData> dataList = null;
+    private List<AudioData> dataList;
     private AudioData playData;
-    private boolean isPlaying = false;
+    private  volatile  boolean isPlaying = false;
 
     private AudioTrack audioTrack;
 
@@ -150,5 +150,9 @@ public class AudioPlayer implements  Runnable{
 
     public void stopPlaying() {
         this.isPlaying = false;
+    }
+
+    public boolean isPlaying(){
+        return this.isPlaying;
     }
 }
