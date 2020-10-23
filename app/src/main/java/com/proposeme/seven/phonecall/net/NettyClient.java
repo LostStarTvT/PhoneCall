@@ -15,21 +15,21 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 public class NettyClient {
 
     private NettyReceiverHandler handler;
-    private int port = 7777;  // 这个监听的端口都是7777 所以不需要更改。
+    private int port = BaseData.PORT;  // 监听端口
 
     private EventLoopGroup group;
 
     private static NettyClient sClient;
 
-    //关闭连接
-    public void shutDownBootstrap(){
-        group.shutdownGracefully();
-    }
-    //构造者模式进行构建ip和端口。
+
     private NettyClient() {
         init();
     }
 
+    /**
+     * 获取Client 单例对象
+     * @return NettyClient
+     */
     public static NettyClient getClient(){
         if (sClient == null){
             sClient = new NettyClient();
@@ -49,7 +49,7 @@ public class NettyClient {
     }
 
     /**
-     * 初始化
+     * 初始化Netty对象。
      */
     private void init() {
         //初始化receiverHandler.
@@ -82,15 +82,30 @@ public class NettyClient {
     }
 
 
-    //通过指定IP进行发送数据
+    /**
+     *  发送数据到指定IP地址，
+     * @param targetIp 目标IP
+     * @param data 数据
+     * @param msgType 数据类型
+     */
     public void UserIPSendData(String targetIp, Object data, String msgType) {
         //这个就是NettyReceiverHandler.sendData（）方法的调用，也即是说，在NettyReceiverHandler这里面可以
         //即是处理接受数据的也是处理，发送数据的。
         handler.sendData(targetIp, port, data, msgType);
     }
 
-    // 断开连接
+    /**
+     * 断开连接
+     * @return true 成功断开  or  false 断开失败
+     */
     public boolean DisConnect(){
         return  handler.DisConnect();
+    }
+
+    /**
+     * 优雅的关闭Netty对象。
+     */
+    public void shutDownBootstrap(){
+        group.shutdownGracefully();
     }
 }

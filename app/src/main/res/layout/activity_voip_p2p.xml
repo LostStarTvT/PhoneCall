@@ -22,7 +22,7 @@
             android:layout_marginTop="20dp"
             android:textColor="#000000"
             android:textSize="18sp"
-            android:text="P2P电话"/>
+            android:text="@string/p2pPhone"/>
         <TextView
             android:id="@+id/create_ip_addr"
             android:layout_width="match_parent"
@@ -30,7 +30,7 @@
             android:gravity="center"
             android:layout_marginTop="10dp"
             android:textColor="#000000"
-            android:text="192.168.1.1"/>
+            android:text="@string/localhost"/>
 
 
         <TextView
@@ -40,7 +40,7 @@
             android:layout_margin="20dp"
             android:textColor="#000000"
             android:gravity="center"
-            android:text="手动输入ip"
+            android:text="@string/input_ip"
             android:background="@drawable/btn_style_white"/>
 
     </LinearLayout>
@@ -60,13 +60,13 @@
             android:layout_height="48dp"
             android:maxLines="1"
             android:text=""
-            android:hint="请输入对方ip" />
+            android:hint="@string/input_ip_hint" />
 
         <Button
             android:id="@+id/user_input_phoneCall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="拨打" />
+            android:text="@string/btn_make_call" />
 
     </LinearLayout>
 
@@ -105,7 +105,7 @@
                 android:textSize="14sp"
                 android:textColor="#9E9E9F"
                 android:gravity="center"
-                android:text="正在等待对方接受语音通话..."
+                android:text="@string/phone_state_wait"
                 android:layout_centerHorizontal="true"
                 android:layout_below="@id/head_bg"
                 android:layout_marginTop="55dp"/>
@@ -126,7 +126,7 @@
                     android:textSize="12sp"
                     android:textColor="#FFFFFF"
                     android:gravity="center"
-                    android:text="取消"
+                    android:text="@string/phone_state_cancel"
                     android:layout_centerHorizontal="true"
                     android:layout_alignParentBottom="true"/>
             </RelativeLayout>
@@ -183,7 +183,7 @@
                         android:textSize="12sp"
                         android:textColor="#FFFFFF"
                         android:gravity="center"
-                        android:text="挂断"
+                        android:text="@string/phone_state_cancel"
                         android:layout_centerHorizontal="true"
                         android:layout_alignParentBottom="true"/>
                 </RelativeLayout>
@@ -227,7 +227,7 @@
             android:textSize="14sp"
             android:textColor="#9E9E9F"
             android:gravity="center"
-            android:text="邀请您进行通话..."
+            android:text="@string/phone_state_invite"
             android:layout_centerHorizontal="true"
             android:layout_below="@id/ring_head_bg"
             android:layout_marginTop="55dp"/>
@@ -258,7 +258,7 @@
                     android:textSize="12sp"
                     android:textColor="#FFFFFF"
                     android:gravity="center"
-                    android:text="挂断"
+                    android:text="@string/phone_state_cancel"
                     android:layout_centerHorizontal="true"
                     android:layout_alignParentBottom="true"/>
             </RelativeLayout>
@@ -281,7 +281,7 @@
                     android:textSize="12sp"
                     android:textColor="#FFFFFF"
                     android:gravity="center"
-                    android:text="语音通话"
+                    android:text="@string/phone_state_answer"
                     android:layout_centerHorizontal="true"
                     android:layout_alignParentBottom="true"/>
             </RelativeLayout>

@@ -10,7 +10,7 @@ import com.proposeme.seven.phonecall.net.NettyReceiverHandler;
 
 /**
  * Describe: 提供网络连接API 和控制逻辑API，这些都是在Service中进行依托。
- * 在进行停止录音与开启录音的时候，必须调用本API进行设置目标IP。
+ * 在进行录音的时需要先设置TargetIP的值。
  */
 
 public class ApiProvider {
@@ -19,7 +19,7 @@ public class ApiProvider {
     private static ApiProvider provider;
     private String targetIP = null; // 目标地址。
 
-    // 需要先进行构造Netty，然后才能进行调用。
+    // 单例模式。
     public static ApiProvider getProvider() {
         if (provider == null) {
             provider = new ApiProvider();
@@ -27,8 +27,8 @@ public class ApiProvider {
         return provider;
     }
 
-    private AudioRecorder mAudioRecorder; //录音机
-    private AudioPlayer mAudioPlayer; // 播放器。
+    private AudioRecorder mAudioRecorder;   //录音机
+    private AudioPlayer mAudioPlayer;       // 播放器。
 
     //构造方法
     private ApiProvider() {
@@ -45,13 +45,6 @@ public class ApiProvider {
      */
     public void registerFrameResultedCallback(NettyReceiverHandler.FrameResultedCallback callback){
         nettyClient.setFrameResultedCallback(callback);
-    }
-
-    //发送文字指令 根据绑定的构造函数进行发送数据。
-    public void sendTestData(String msg) {
-        if (targetIP != null)
-            nettyClient.UserIPSendData(targetIP, msg, Message.MES_TYPE_NORMAL);
-        Log.e("ccc","发送一条信息");
     }
 
     /**

@@ -20,7 +20,6 @@ public class AudioRecorder  implements Runnable {
     //回声消除
     private AcousticEchoCanceler canceler;
 
-    private Thread runner = null;
     private AudioRecorder(){
     }
 
@@ -50,8 +49,7 @@ public class AudioRecorder  implements Runnable {
         //消回音处理
         assert audioRecord != null;
         initAEC(audioRecord.getAudioSessionId());
-        runner = new Thread(this); //启动本线程。即实现接口的启动方式
-        runner.start();
+        new Thread(this).start();
     }
 
     // 关闭录制
@@ -81,10 +79,8 @@ public class AudioRecorder  implements Runnable {
     public void run() {
 
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
-            Log.e("ccc", "unInit");
             return;
         }
-
         // 在录音之前实例化一个编码类，在编码类中实现的数据的发送。
         AudioEncoder encoder = AudioEncoder.getInstance();
         encoder.startEncoding();

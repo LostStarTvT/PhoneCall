@@ -1,9 +1,9 @@
 package com.proposeme.seven.phonecall;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.CountDownTimer;
@@ -11,27 +11,29 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.SystemClock;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.proposeme.seven.phonecall.audio.AudioDecoder;
+import com.proposeme.seven.phonecall.net.BaseData;
+import com.proposeme.seven.phonecall.net.IPSave;
 import com.proposeme.seven.phonecall.net.NettyReceiverHandler;
 import com.proposeme.seven.phonecall.provider.ApiProvider;
 import com.proposeme.seven.phonecall.service.VoIPService;
-import com.proposeme.seven.phonecall.utils.MLOC;
 import com.proposeme.seven.phonecall.utils.NetUtils;
 
-import static com.proposeme.seven.phonecall.net.CallSignal.PHONE_ANSWER_CALL;
-import static com.proposeme.seven.phonecall.net.CallSignal.PHONE_CALL_END;
-import static com.proposeme.seven.phonecall.net.CallSignal.PHONE_MAKE_CALL;
+import static com.proposeme.seven.phonecall.net.BaseData.IFS;
+import static com.proposeme.seven.phonecall.net.BaseData.PHONE_ANSWER_CALL;
+import static com.proposeme.seven.phonecall.net.BaseData.PHONE_CALL_END;
+import static com.proposeme.seven.phonecall.net.BaseData.PHONE_MAKE_CALL;
 
 // 此界面就是进行呼叫、接听、响铃、正常的切换
 // 需要实现的功能就是
@@ -50,11 +52,12 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
     private EditText mEditText; //记录用户输入ip地址
 
 
+    private VoIPService IPService;
     // 获取到service对象引用，获取到provider
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            VoIPService IPService = ((VoIPService.MyBinder) service).getService();
+            IPService = ((VoIPService.MyBinder) service).getService();
             provider = IPService.getProvider();
             // 只能在获取到provider 以后才能进行网络的初始化
             netInit();
@@ -112,7 +115,7 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
         findViewById(R.id.begin_view).setVisibility(View.GONE);
         findViewById(R.id.user_input_ip_view).setVisibility(View.GONE);
 
-        ((TextView)findViewById(R.id.create_ip_addr)).setText(MLOC.localIpAddress);
+        ((TextView)findViewById(R.id.create_ip_addr)).setText(BaseData.LOCALHOST);
         timer = findViewById(R.id.timer);
 
         //设置挂断按钮
@@ -138,10 +141,27 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
                 }
             }
         };
-
         //启动服务。
         Intent intent = new Intent(this,VoIPService.class);
         bindService(intent,mServiceConnection,BIND_AUTO_CREATE);
+
+        // 检测是否是由service启动的activity。
+        boolean isFromService = getIntent().getBooleanExtra(IFS,false);
+        if (isFromService){
+            showRingView(); // 显示通话的界面。
+            isBusy = true;
+        }
+    }
+
+    /**
+     *  自动关闭输入法
+     * @param act 当前activity
+     * @param v 绑定的控件。
+     */
+    public void hideOneInputMethod(Activity act, View v) {
+        InputMethodManager imm = (InputMethodManager) act.getSystemService(Context.INPUT_METHOD_SERVICE);
+        assert imm != null;
+        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
     }
 
     //网络初始化操作
@@ -179,27 +199,17 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
                 }
             }
         });
-
     }
 
     //点击后退键触发的方法
     @Override
     public void onBackPressed(){
-        new AlertDialog.Builder(VoIpP2PActivity.this).setCancelable(true)
-                .setTitle("是否退出?")
-                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
 
-                    }
-                }).setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        timer.stop();
-                        finish(); //确定以后调用退出方法
-                    }
-                }
-        ).show();
+        // 这时候就需要重新进行注册监听。
+        hangupOperation();// 这时候也会进行挂断。
+        IPService.registerCallBack(); //重新注册监听打电话请求的监听。
+        timer.stop();
+        finish(); //确定以后调用退出方法
     }
 
     // 显示初始界面
@@ -218,6 +228,8 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
         findViewById(R.id.ring_view).setVisibility(View.GONE);
         findViewById(R.id.calling_view).setVisibility(View.GONE);
         findViewById(R.id.begin_view).setVisibility(View.GONE);
+        // 从缓存中找到IP地址。
+        mEditText.setText(IPSave.getIP(this));
     }
     // 显示呼叫时候的view
     private void showCallingView(){
@@ -291,6 +303,8 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
                     isBusy = true;
                     //2 发送一条拨打电话的信息。
                     provider.sentTextData(PHONE_MAKE_CALL.toString());
+                    IPSave.saveIP(this, ip); //保存IP
+                    hideOneInputMethod(this,mEditText); // 隐藏输入法
                 }else {
                     Toast.makeText(this,"IP格式不对，请重新输入~",Toast.LENGTH_SHORT).show();
                 }

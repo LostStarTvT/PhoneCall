@@ -2,7 +2,6 @@ package com.proposeme.seven.phonecall.net;
 
 import android.util.Log;
 import com.alibaba.fastjson.JSON;
-import com.proposeme.seven.phonecall.utils.MLOC;
 import java.net.InetSocketAddress;
 
 import io.netty.buffer.ByteBuf;
@@ -79,7 +78,7 @@ public class NettyReceiverHandler extends SimpleChannelInboundHandler<DatagramPa
             message.setMsgBody((String) data);
             message.setMsgtype(type);
             message.setTimestamp(System.currentTimeMillis());
-            message.setMsgIp(MLOC.localIpAddress);
+            message.setMsgIp(BaseData.LOCALHOST);
         }
 
         //进行数据的发送
@@ -97,6 +96,7 @@ public class NettyReceiverHandler extends SimpleChannelInboundHandler<DatagramPa
     }
 
 
+    // 数据回调。
     public interface FrameResultedCallback {
         void onTextMessage(String msg); //返回文本信息
         void onAudioData(byte[] data);  //返回音频信息

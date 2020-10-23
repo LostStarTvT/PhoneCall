@@ -4,4 +4,16 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="p2pPhone">P2P Phone</string>
+    <string name="localhost">127.0.0.1</string>
+    <string name="input_ip">input ip</string>
+    <string name="input_ip_hint">please input target ip </string>
+
+    <string name="btn_make_call">make call</string>
+
+    <string name="phone_state_wait">Waiting for the answer…</string>
+    <string name="phone_state_cancel">Cancel</string>
+    <string name="phone_state_answer">Answer</string>
+    <string name="phone_state_invite">Inviting you to answer the call…</string>
 </resources>
