@@ -1,68 +1,174 @@
 # PhoneCall
+
+[English](README-En.md)
+
 ## 一、介绍 
-基于netty框架开发的局域网IP电话，共有四个界面：**打电话界面，响铃界面，通话界面，主界面**， 用户输入对方IP地址并点击拨打按钮便可以进行通话。其中电话的交互通过控制信令实现。本来打算做个群组通话，但是只实现了音频合成功能。
+基于netty框架开发的局域网IP电话，用户输入对方IP地址便能够进行语音通话。为了实现网络连接与Activity无关，使用service管理netty对象，现阶段可以在APP的任意界面监听到打电话请求，并跳转到响铃界面。另外，本项目将需要的操作封装到了ApiProvider类中。
 
 ps：本项目是在[VideoCalling](<https://github.com/xmtggh/VideoCalling>)上进行改进的，该项目是实现局域网的视频传输，我将其语音传输抽取出来进行更改实现语音通话，感谢作者的无私贡献。
 
-### demo测试 
+## 测试 
 
-demo文件夹中的apk文件可以直接下载运行，注册界面可以忽略，随意填写，点击P2P电话按钮进入电话测试。在测试时双方需要同时进入P2P电话界面，因为在线用户需要服务器支持，所以不会显示，测试只需要使用输入对方IP即可。正确输入对方IP即可进行语音通话。
+Releases v3为最新版本，将两个手机连接到同一个局域网中，一方输入对方IP便可以进行语音通话。网络监听线程设置在Service中，当监听到打电话请求便会直接跳转到响铃界面。
 
-## 二、实现思路
-利用安卓里面的AudioRecord录音类进行录音，然后运用speex第三方库进行降噪编码，将编码后的语音流使用socket发送给对方， 对方在收到语音数据时候将进行解码操作，然后使用AudioTrack进行语音播放。电话逻辑是采用发送文本信息进行控制，本项目中控制和语音流都是同一个端口进行监听略有不足，理论上语音通话和命令传输应该采用两个端口进行控制，类似于ftp协议21端口传输命令，20端口传输文本信息 。  
-对于群组通话，例如有ABC三人进行通话，首先A开启一个聊天室，然后BC加入聊天室，此时BC只需将自己的语音流发送给A，然后在A进行语音的合成操作，将合成的语音在本地播放和发送给BC即可。
+## 实现思路
 
-### 界面展示
+首先使用AudioRecord进行音频录制，使用speex进行降噪并编码生成语音流，然后使用socket发送给出去， 接受方收到语音数据后将进行解码，然后使用AudioTrack播放。其中，电话交互逻辑使用文本信令控制。
 
-![输入ip](pictures/call.png) 
-## 三、项目架构
+对于群组通话，假设有ABC三人进行通话，首先A开启一个聊天室，然后BC加入聊天室，此时BC只需将自己的语音流发送给A，然后在A进行语音的合成操作，将合成的语音在本地播放和发送给BC即可。
+
+## 界面展示
+
+![call.png](https://pic.tyzhang.top/images/2020/10/23/call.png)
+## 项目架构
+
 - audio包：进行音频的录制、编码、解码、播放操作 
 - net包：网络连接的包 
   - CallSingal:定义电话信令，如拨打电话操作 
   - Message: 传输数据，包括字节与音流和文字 
   - NettyClient: netty网络连接代理 
   - NettyReceiverHandler: 处理发送数据和接受数据，定义接口回调返回语音信息和电话信令信息
-- provider包: 网络连接提供者，通过这个对象可以实现网络数据的发送与接收，需要定义接口进行接受与音数据
-- users包：获取服务器上在线用户IP的用户对象
+- **ApiProvider: 提供网络发送API，音频播放和录制API，连接断开等API。整个项目的入口文件。**
 - mixAudioUtils: 混音用的工具类
 - MultiVoIPActivity:实现混音界面，需要录制两端音频然后点击混音按钮，之后点击输出混音即可播放
 - VoipP2PActivity:IP电话的主要界面，因为需要监听打电话的请求，但是不会写service进行后台监听，所以就在一个activity中写了五个界面进行切换..以后有机会可能会改
-- RegisterActivity：注册界面，原本是可以注册然后进行用户登录显示在线，然后直接点击在线用户就可以拨打电话，不过不进行登录也没有关系
 
-## 四、控制信令逻辑图
-### 1.正常通话过程
-![正常通话信令交互](pictures/callsignal.png)
-### 2.异常通话过程
-![正常通话信令交互](pictures/errorsCall.png)
+## 控制信令逻辑图
 
-## 五、打电话逻辑
+![PhoneCallCh.png](https://pic.tyzhang.top/images/2020/10/20/PhoneCallCh.png)
+
+## 二、代码
+
+### 0. API
+
+打电话的逻辑是基于以下API实现，**包括音频的录制与播放，语音流的发送与接收，连接的断开与关闭，以上包括了实现PhoneCall所需要的全部功能。**
+
+```java
+public class ApiProvider {
+    /**
+     *  注册回调，处理接收到的音频和文本。
+     * @param callback 回调变量。
+     */
+    public void registerFrameResultedCallback(NettyReceiverHandler.FrameResultedCallback callback){}
+
+    /**
+     * 发送音频数据
+     * @param data 音频流
+     */
+    public void sendAudioFrame(byte[] data) {}
+
+    /**
+     *  通过设置默认IP进行发送数据。
+     * @param msg 消息
+     */
+    public void sentTextData(String msg) {}
+    /**
+     * 通过指定IP发送文本信息
+     * @param targetIp 目标IP
+     * @param msg 文本消息。
+     */
+    public void UserIPSentTextData(String targetIp, String msg) {}
+    /**
+     * 通过指定IP发送音频信息
+     * @param targetIp 目标IP
+     * @param data 数据流
+     */
+    public void UserIpSendAudioFrame(String targetIp ,byte[] data) {}
+
+    /**
+     * 关闭Netty客户端，
+     */
+    public void shutDownSocket(){}
+
+    /**
+     *  关闭连接，打电话结束
+     * @return true or false
+     */
+    public boolean disConnect(){}
+
+    /**
+     *  获取目标地址
+     * @return 此时目标地址。
+     */
+    public String getTargetIP() {}
+
+    /**
+     *  设置目标地址
+     * @param targetIP 设置目标地址。
+     */
+    public void setTargetIP(String targetIP) {}
+
+    /**
+     * 开始录音 在开始以下操作之前，必须先把目标IP设置对，否则会出现问题。
+     */
+    public void startRecord(){}
+
+    /**
+     * 停止录音
+     */
+    public void  stopRecord(){}
+
+    /**
+     *  录音线程是否正在录音
+     * @return true 正在录音 or false 没有在录音
+     */
+    public boolean isRecording(){}
+
+    /**
+     * 开始播放音频
+     */
+    public void startPlay(){}
+
+    /**
+     * 停止播放音频
+     */
+    public void stopPlay(){}
+
+    /**
+     *  是否正在播放
+     * @return true 正在播放;  false 停止播放
+     */
+    public boolean isPlaying(){}
+
+    /**
+     *  开启录音与播放
+     */
+    public void startRecordAndPlay(){}
+
+    /**
+     * 关闭录音与播放
+     */
+    public void stopRecordAndPlay(){}
+}
+```
+
 ### 1. 监听端口
 
-对于每一个客户端来说，都需要监听打电话的请求，并且获取到请求方的IP，然后进行数据的交互。首先需要监听端口。这里用到了Netty框架中的`Bootstrap`这个类。主要是用来设置netty的连接属性以及绑定监听的端口，这样，请求通话信息以及后续的音频数据才能够被接收。代码如下：
+每个客户端在启动时，都需要初始化一个Netty客户端进行监听请求，当收到请求以后，需要捕获发送方IP，然后进行主动的回复。
 
 ```java
 Bootstrap b = new Bootstrap();
- group = new NioEventLoopGroup();
- try {
-​     //设置netty的连接属性。
-​     b.group(group)
-​             .channel(NioDatagramChannel.class) //异步的 UDP 连接
-​             .option(ChannelOption.SO_BROADCAST, true)
-​             .option(ChannelOption.SO_RCVBUF, 1024 * 1024)//接收区2m缓存
-​             .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(65535))//加上这个，里面是最大接收、发送的长度
-​             .handler(handler); //设置数据的处理器
-​     b.bind(localPort).sync().channel().closeFuture().await();
- } catch (Exception e) {
-​     e.printStackTrace();
- } finally {
-​     group.shutdownGracefully();
- }
+group = new NioEventLoopGroup();
+try {
+    //设置netty的连接属性。
+    b.group(group)
+        .channel(NioDatagramChannel.class) //异步的 UDP 连接
+        .option(ChannelOption.SO_BROADCAST, true)
+        .option(ChannelOption.SO_RCVBUF, 1024 * 1024)//接收区2m缓存
+        .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(65535))//加上这个，里面是最大接收、发送的长度
+        .handler(handler); //设置数据的处理器
+    b.bind(localPort).sync().channel().closeFuture().await();
+} catch (Exception e) {
+    e.printStackTrace();
+} finally {
+    group.shutdownGracefully();
+}
 ```
 ### 2. 数据传输
 
 主要包括两种数据：
 
-1. 文本信令：建立连接过程中的文本数据
+1. 数字信令(Integer)：建立连接过程中的控制数字，发送的时候被转成String类型，(为了兼容Handler只能发送数字)。
 2. 语音数据：通话中的语音数据
 
 每次传输需要判断需要发送的是什么类型的数据，做相应的处理后装入运输载体Message对象中，最后用`ChannelHandlerContext`对象将转换为Json格式的Message对象发送至目标IP地址相应的端口。
@@ -95,7 +201,6 @@ public void sendData(String ip, int port, Object data, String type) {
 
 ```java
 //接收数据。
-//服务器推送对方IP和PORT
  ByteBuf buf = (ByteBuf) packet.copy().content(); //字节缓冲区
  byte[] req = new byte[buf.readableBytes()];
  buf.readBytes(req);
@@ -119,44 +224,53 @@ if (message.getMsgtype().equals(Message.MES_TYPE_NOMAL)){
      }
  }
 ```
-### 3. 通话信令
+### 3. 数字信令
 
-在建立连接的过程中，会记录下对方的IP。在通话过程中，将收到的数据传给解码模块进行处理。
 总共的控制代码有三种:
 
-1. 当收到打电话信令的时候，需要判断此时被呼叫端是否正忙，如果不忙则跳到响铃界面，否则直接丢包。
-2. 当收到对方接听电话的指令时，则直接显示对话界面，开始录音并且将接电话标示置为true。
-3. 当收到通话结束的时候，此时需要判断发出此条结束消息的来源是否是正在通话的客户端，防止在第三方进行呼叫是出现错误挂断的情形。
+```java
+// control text
+public static final Integer PHONE_MAKE_CALL = 100; // make call 
+public static final Integer PHONE_ANSWER_CALL = 200; // answer call 
+public static final Integer PHONE_CALL_END = 300; //  call end 
+```
+
+假设A向B进行打电话：
+
+1. 当B收到*PHONE_MAKE_CALL*后，B需要先判断此时自己是否正忙（正在打电话），如果不忙则跳到响铃界面，否则直接丢包。
+2. 当A收到B的PHONE_ANSWER_CALL后，则直接显示对话界面，开始录音并且将接电话标识设置为true。
+3. 当A或者B收到PHONE_CALL_END后，此时需要判断发出此条结束消息的来源是否是正在通话的客户，防止在第三方进行呼叫是出现错误挂断的情形。
 
 ```java
-  if (msg.what == phone_make_call) { //收到打电话的请求。
-
-       if (!isBusy){ //如果不忙 则跳转到通话界面。
-              showRingView(); //跳转到响铃界面。
-              isBusy = true;
-           }
-
-  }else if (msg.what == phone_answer_call){ //接听电话
-      showTalkingView();
-      audioRecorder.startRecording(); //开始语音播放。
-      isAnswer = true; //接通电话为真
-
-  }else if (msg.what == phone_call_end){ //收到通话结束的信息
-      if (newEndIp.equals(TargetIp)){ //验证发送结束指令的来源
-               showBeginView();
-               isAnswer = false;
-               isBusy = false;
-               audioRecorder.stopRecording(); //关闭录音和发送数据
-               timer.stop();
-            }     
-
-}
+// 状态切换逻辑
+@SuppressLint("HandlerLeak")
+private Handler mHandler = new Handler() {
+    public void handleMessage(Message msg) {
+        //根据标志记性自定义的操作，这个操作可以操作主线程。
+        if (msg.what == PHONE_MAKE_CALL) { //收到打电话的请求。
+            if (!isBusy){ //如果不忙 则跳转到通话界面。
+                showRingView(); //跳转到响铃界面。
+                isBusy = true;
+            }
+        }else if (msg.what == PHONE_ANSWER_CALL){ //接听电话
+            showTalkingView();
+            provider.startRecordAndPlay();
+            isAnswer = true; //接通电话为真
+        }else if (msg.what == PHONE_CALL_END){ //收到通话结束的信息
+            if (newEndIp.equals(provider.getTargetIP())){
+                showBeginView();
+                isAnswer = false;
+                isBusy = false;
+                provider.stopRecordAndPlay();
+                timer.stop();
+            }
+        }
+    }
+};
 ```
-##  六、混音功能
+###  4.混音
 
-混音实现主要运用通过录音路录制两段音频，然后将其保存到文件中，混音时以字节流进行读取录音文件，然后采用平均混音算法进行混音，并保存到文件，通过测试可以成功的实现混音操作。主要涉及到安卓文件的创建和以字节流的方式进行文件的读取，混音算法。
-
-混音算法，使用二维byte数组保存两个音频流，然后进行合并。需要传入保存的文件名称
+混音采用的是平均混音算法，通过测试可以实现混音。主要涉及到安卓文件的创建和以字节流的方式进行文件的读取。
 
 ```java 
 public static byte[] averageMix(String file1,String file2) throws IOException {
