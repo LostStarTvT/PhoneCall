@@ -36,12 +36,11 @@ import static com.proposeme.seven.phonecall.net.BaseData.PHONE_CALL_END;
 import static com.proposeme.seven.phonecall.net.BaseData.PHONE_MAKE_CALL;
 
 // 此界面就是进行呼叫、接听、响铃、正常的切换
-// 需要实现的功能就是
-// 1 建立通道，发送希望通话信令。
 public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private Chronometer timer; // 打电话倒计时。
+    private Chronometer timer; // 通话计时器
     private CountDownTimer mCountDownTimer; //打电话超时计时器
+
     // API控制对象
     private ApiProvider provider;
 
@@ -73,16 +72,17 @@ public class VoIpP2PActivity extends AppCompatActivity implements View.OnClickLi
     private Handler mHandler = new Handler() {
         public void handleMessage(Message msg) {
             //根据标志记性自定义的操作，这个操作可以操作主线程。
-            if (msg.what == PHONE_MAKE_CALL) { //收到打电话的请求。
+            if (msg.what == PHONE_MAKE_CALL) { //  接受方接收
                 if (!isBusy){ //如果不忙 则跳转到通话界面。
                     showRingView(); //跳转到响铃界面。
                     isBusy = true;
                 }
-            }else if (msg.what == PHONE_ANSWER_CALL){ //接听电话
+            }else if (msg.what == PHONE_ANSWER_CALL){ // 发送方接收
                 showTalkingView();
                 provider.startRecordAndPlay();
                 isAnswer = true; //接通电话为真
-            }else if (msg.what == PHONE_CALL_END){ //收到通话结束的信息
+                mCountDownTimer.cancel(); // 关闭倒计时定时器。
+            }else if (msg.what == PHONE_CALL_END){ //收到通话结束的信息 接收方和发送方都可能接收。
                 if (newEndIp.equals(provider.getTargetIP())){
                     showBeginView();
                     isAnswer = false;

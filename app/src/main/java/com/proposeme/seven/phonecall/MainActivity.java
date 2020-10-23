@@ -76,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void permissionSuccess() {
 
+
                             }
                             @Override
                             public void permissionFailed() {
